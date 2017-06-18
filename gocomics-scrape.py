@@ -3,6 +3,7 @@
 import datetime
 import formatter
 import htmllib
+import random
 import re
 import sys
 import time
@@ -11,6 +12,20 @@ import xml.dom.minidom
 from xml.sax.saxutils import escape as xml_escape
 
 XHTML_NS = 'http://www.w3.org/1999/xhtml'
+
+import httplib
+
+class MyHTTPConnection(httplib.HTTPConnection):
+  local_address = None
+  def __init__(self, *args, **kwargs):
+    if self.local_address is not None:
+      kwargs['source_address'] = (self.local_address, random.randint(3000, 9999))
+    httplib.HTTPConnection.__init__(self, *args, **kwargs)
+
+class MyHTTP(httplib.HTTP):
+  _connection_class = MyHTTPConnection
+
+httplib.HTTP = MyHTTP
 
 def open_url(url):
   class Opener(urllib.URLopener):
@@ -98,6 +113,9 @@ def get_strip_image_url(strip_url):
 
   return parser.image_url
 
+if sys.argv[1] == '--local-address':
+  MyHTTPConnection.local_address = sys.argv[2]
+  sys.argv[1:3] = []
 
 title, strips = get_homepage_data(sys.argv[1])
 
